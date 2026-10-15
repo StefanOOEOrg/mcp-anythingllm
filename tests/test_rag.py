@@ -62,9 +62,18 @@ def test_add_needs_workspace_and_embeds_into_it(api):
     with pytest.raises(ToolError, match="needs a workspace"):
         rag_add("Note", "text", "")
     assert rag_add("Note", "text", "personal") == {
-        "saved": True, "workspace": "personal", "title": "Note",
-        "location": "custom-documents/raw-x.json"}
+        "saved": True, "workspace": "personal", "title": "note.txt", "source": "",
+        "location": "custom-documents/raw-note-2.json"}
     assert api.requests[-1][2]["addToWorkspaces"] == "personal"
+
+
+def test_add_with_path_stores_the_source_and_refuses_duplicates(api):
+    """A path becomes the note's source ('note:<path>'); an existing path is refused."""
+    saved = rag_add("Ideas", "x", "Personal", path="/Ideas/new.md")
+    assert saved["source"] == "Ideas/new.md"
+    assert api.docs[saved["location"]][2] == "note:Ideas/new.md"
+    with pytest.raises(ToolError, match="exists already - use rag_update"):
+        rag_add("Log", "x", "personal", path="Travel/train-log.md")
 
 
 def test_wrong_key_and_unreachable_server_become_clear_errors(api):

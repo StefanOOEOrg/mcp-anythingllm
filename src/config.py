@@ -24,3 +24,8 @@ TIMEOUT_SECONDS = float(os.getenv("ANYTHINGLLM_TIMEOUT_SECONDS", "180"))
 # ~0.4-0.53 and matches at ~0.6-0.75.
 SCORE_THRESHOLD = float(os.getenv("ANYTHINGLLM_SCORE_THRESHOLD", "0.5"))
 TOP_N = int(os.getenv("ANYTHINGLLM_TOP_N", "6"))
+
+# === DOCUMENTS ===
+# AnythingLLM's documents folder (storage/documents, the parsed text as JSON), readable by this
+# server. The API returns no document text, so rag_get reads it here; empty = rag_get disabled.
+DOCUMENTS_DIR = os.getenv("ANYTHINGLLM_DOCUMENTS_DIR", "")

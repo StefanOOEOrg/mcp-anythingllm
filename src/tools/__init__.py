@@ -1,4 +1,4 @@
 """Tool modules. Importing this package registers every tool on the shared server."""
-from . import rag
+from . import documents, rag
 
-__all__ = ["rag"]
+__all__ = ["documents", "rag"]

@@ -15,7 +15,14 @@ AnythingLLM's developer API.
 | `rag_workspaces()` | Lists the workspaces (name, slug). |
 | `rag_search(query, workspace?)` | Best passages (text, document title, workspace, score 0..1); all workspaces when `workspace` is empty. |
 | `rag_answer(question, workspace?)` | Answer from the documents only (chat mode `query`), with sources. Without `workspace` the workspace with the best passage answers; if nothing matches, no LLM call. |
-| `rag_add(title, text, workspace)` | Saves a note as a document and embeds it — only on the user's explicit request. |
+| `rag_documents(workspace?, contains?)` | Lists the documents: source path, title, workspaces, last update. |
+| `rag_get(document)` | The whole text of one document (needs `ANYTHINGLLM_DOCUMENTS_DIR`). |
+| `rag_add(title, text, workspace, path?)` | Saves a new note and embeds it; `path` gives it a stable source to find it again. |
+| `rag_update(document, text)` | Replaces a document's content (new version is embedded first, then the old one removed); source, title and workspaces stay. |
+| `rag_remove(document)` | Deletes a document from every workspace and the storage. |
+
+Writing tools are meant for explicit requests or a skill's workflow. A `document` is named by its
+source path (or its end, e.g. `train-log.md`), its title or its storage name.
 
 ## Configuration (`.env`)
 
@@ -26,6 +33,7 @@ AnythingLLM's developer API.
 | `ANYTHINGLLM_TIMEOUT_SECONDS` | `180` | per request (answers come from the local LLM) |
 | `ANYTHINGLLM_SCORE_THRESHOLD` | `0.5` | minimum similarity of a passage (unrelated ≈ 0.4–0.53, matches ≈ 0.6–0.75) |
 | `ANYTHINGLLM_TOP_N` | `6` | passages per search |
+| `ANYTHINGLLM_DOCUMENTS_DIR` | — | AnythingLLM's `storage/documents` folder, readable by this server (the API returns no document text); without it `rag_get` is disabled |
 
 ## Development
 

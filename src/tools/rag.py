@@ -42,7 +42,7 @@ def rag_tool(func: Callable) -> Callable:
     return wrapper
 
 
-def _slugs(workspace: str | None) -> list[str]:
+def slugs(workspace: str | None) -> list[str]:
     """The slugs to search: the one named (by name or slug) or all of them."""
     spaces = client().workspaces()
     if not workspace:
@@ -58,7 +58,7 @@ def _slugs(workspace: str | None) -> list[str]:
 def search(query: str, workspace: str | None = None, top_n: int = config.TOP_N) -> list[dict]:
     """Best passages over the given workspace(s), highest score first."""
     hits = []
-    for slug in _slugs(workspace):
+    for slug in slugs(workspace):
         for hit in client().vector_search(slug, query, top_n, config.SCORE_THRESHOLD):
             meta = hit.get("metadata") or {}
             hits.append({"workspace": slug, "title": meta.get("title") or "?",
@@ -120,11 +120,21 @@ def rag_add(
                                             "road bike'.")],
     text: Annotated[str, Field(description="The full content (Markdown).")],
     workspace: Annotated[str, Field(description="Workspace name or slug to store it in.")],
+    path: Annotated[str, Field(description=(
+        "Optional stable source path, e.g. 'Travel/train-log.md', to find the note again with "
+        "rag_get / rag_update / rag_remove. Must not exist yet."))] = "",
 ) -> dict:
-    """Save a note in the knowledge base. Only when the user explicitly asks to store it."""
+    """Save a new note in the knowledge base. Only when the user asks to store something or a
+    skill's workflow says so."""
     if not (workspace or "").strip():
         raise AnythingLLMError("rag_add needs a workspace (see rag_workspaces).")
-    slug = _slugs(workspace)[0]
-    doc = client().add_text(slug, title, text)
+    slug = slugs(workspace)[0]
+    path = path.strip().lstrip("/")
+    if path:
+        for space in client().workspaces():
+            for doc in client().documents(space["slug"]):
+                if doc["source"].split(":", 1)[-1] == path:
+                    raise AnythingLLMError(f"'{path}' exists already - use rag_update.")
+    doc = client().add_text(slug, title, text, source=f"note:{path}" if path else "")
     return {"saved": True, "workspace": slug, "title": doc.get("title") or title,
-            "location": doc.get("location")}
+            "source": path, "location": doc.get("location")}

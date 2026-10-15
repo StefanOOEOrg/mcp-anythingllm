@@ -1,4 +1,6 @@
 """Thin client for the AnythingLLM developer API (/api/v1)."""
+import json
+
 import httpx
 
 import config
@@ -28,6 +30,8 @@ class Client:
         try:
             body = response.json()
         except ValueError as exc:
+            if response.status_code < 400:  # some write endpoints answer 200 with plain text
+                return {}
             raise AnythingLLMError(f"AnythingLLM answered {response.status_code} without "
                                    "JSON.") from exc
         if response.status_code >= 400 or body.get("error"):
@@ -53,8 +57,32 @@ class Client:
         return self._call("POST", f"/workspace/{slug}/chat",
                           json={"message": question, "mode": "query", "reset": True})
 
+    def documents(self, slug: str) -> list[dict]:
+        """Documents embedded in the workspace: name (storage path), title, source, updated."""
+        space = self._call("GET", f"/workspace/{slug}").get("workspace") or {}
+        if isinstance(space, list):
+            space = space[0] if space else {}
+        docs = []
+        for doc in space.get("documents") or []:
+            meta = doc.get("metadata") or {}
+            if isinstance(meta, str):
+                try:
+                    meta = json.loads(meta)
+                except ValueError:
+                    meta = {}
+            docs.append({"name": doc.get("docpath") or "",
+                         "title": meta.get("title") or doc.get("filename") or "",
+                         "source": meta.get("chunkSource") or meta.get("url") or "",
+                         "updated": doc.get("lastUpdatedAt") or ""})
+        return docs
+
+    def remove_documents(self, names: list[str]) -> None:
+        """Delete documents for good: from every workspace, the vectors and the storage."""
+        self._call("DELETE", "/system/remove-documents", json={"names": names})
+
     def add_text(self, slug: str, title: str, text: str, source: str = "") -> dict:
-        """Save raw text as a document and embed it into the workspace."""
+        """Save raw text as a document and embed it into the workspace(s) (slugs joined by
+        commas)."""
         metadata = {"title": title, **({"chunkSource": source} if source else {})}
         body = self._call("POST", "/document/raw-text",
                           json={"textContent": text, "addToWorkspaces": slug,
