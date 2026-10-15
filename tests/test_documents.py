@@ -36,7 +36,8 @@ def test_documents_summarises_folders_when_there_are_too_many(api, monkeypatch):
 def test_get_finds_a_document_by_path_end_title_or_storage_name(api, name):
     """Source path (or its end), title and storage name all address the same document."""
     doc = rag_get(name)
-    assert (doc["source"], doc["text"]) == ("Travel/train-log.md", "2026: Linz-Wien")
+    assert doc.startswith("Document: Travel/train-log.md\nWorkspaces: personal")
+    assert doc.endswith("\n\n2026: Linz-Wien")
     assert api.requests
 
 
@@ -62,7 +63,7 @@ def test_update_adds_the_new_version_first_then_removes_the_old(api):
     assert "custom-documents/raw-train-log-1.json" not in api.docs
     assert api.docs[result["name"]][:3] == (["personal"], "train-log.txt",
                                             "note:Travel/train-log.md")
-    assert rag_get("Travel/train-log.md")["text"] == "2026: Linz-Wien, Wels-Graz"
+    assert rag_get("Travel/train-log.md").endswith("\n\n2026: Linz-Wien, Wels-Graz")
     with pytest.raises(ToolError, match="empty"):
         rag_update("train-log.md", "  ")
 

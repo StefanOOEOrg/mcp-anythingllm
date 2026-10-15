@@ -71,12 +71,6 @@ def read_text(name: str) -> str:
         raise AnythingLLMError(f"Document '{name}' could not be read: {exc}") from exc
 
 
-def _summary(doc: dict) -> dict:
-    """What the agent sees of a document."""
-    return {"source": doc["path"], "title": doc["title"], "name": doc["name"],
-            "workspaces": doc["workspaces"], "updated": doc["updated"]}
-
-
 @rag_tool
 def rag_documents(
     workspace: Workspace = None,
@@ -99,11 +93,14 @@ def rag_documents(
 
 
 @rag_tool
-def rag_get(document: Document) -> dict:
+def rag_get(document: Document) -> str:
     """Get (read) a whole wiki document or note - its full text, e.g. a log or plan that is to
-    be updated."""
+    be updated. Returns a short header, then the complete text as plain Markdown."""
     doc = resolve(document)
-    return {**_summary(doc), "text": read_text(doc["name"])}
+    return (f"Document: {doc['path'] or doc['title']}\n"
+            f"Workspaces: {', '.join(doc['workspaces'])} | updated: {doc['updated']}\n"
+            "Full text follows (this is the whole document - pass it complete, edited, to "
+            "rag_update):\n\n" + read_text(doc["name"]))
 
 
 @rag_tool
