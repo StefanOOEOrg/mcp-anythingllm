@@ -71,7 +71,7 @@ def search(query: str, workspace: str | None = None, top_n: int = config.TOP_N) 
 
 @rag_tool
 def rag_workspaces() -> list[dict]:
-    """List the workspaces of the knowledge base (name and slug)."""
+    """List the workspaces of the knowledge base (wiki): name and slug."""
     return [{"name": space.get("name"), "slug": space["slug"]}
             for space in client().workspaces()]
 
@@ -82,8 +82,9 @@ def rag_search(
                                             "e.g. 'tyre pressure road bike'.")],
     workspace: Workspace = None,
 ) -> dict:
-    """Find the passages in the user's documents that match the query (text, document title,
-    workspace, similarity score 0..1). Use it to read the sources yourself."""
+    """Search the user's knowledge base (wiki, notes, documents): the passages that match the
+    query (text, document title, workspace, similarity score 0..1). Use it to read the sources
+    yourself."""
     hits = search(query, workspace)
     if not hits:
         return {"hits": [], "note": "Nothing in the knowledge base matches this query."}
@@ -95,7 +96,8 @@ def rag_answer(
     question: Annotated[str, Field(description="The user's question in their words.")],
     workspace: Workspace = None,
 ) -> dict:
-    """Answer a question from the user's documents only, with the documents used as sources.
+    """Answer a question from the user's knowledge base (wiki, notes, documents) only, with the
+    documents used as sources.
     Without `workspace`, the workspace with the best matching passage is used."""
     best = search(question, workspace, top_n=1)
     if not best:
@@ -124,8 +126,8 @@ def rag_add(
         "Optional stable source path, e.g. 'Travel/train-log.md', to find the note again with "
         "rag_get / rag_update / rag_remove. Must not exist yet."))] = "",
 ) -> dict:
-    """Save a new note in the knowledge base. Only when the user asks to store something or a
-    skill's workflow says so."""
+    """Add (save) a new note or document to the knowledge base (wiki). Only when the user asks
+    to store something or a skill's workflow says so."""
     if not (workspace or "").strip():
         raise AnythingLLMError("rag_add needs a workspace (see rag_workspaces).")
     slug = slugs(workspace)[0]

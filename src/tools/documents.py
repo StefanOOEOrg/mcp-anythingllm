@@ -89,8 +89,8 @@ def rag_documents(
     contains: Annotated[str, Field(description="Only documents whose source or title contains "
                                                "this text, e.g. 'Todo/'. Empty = all.")] = "",
 ) -> dict:
-    """List the documents of the knowledge base (source path, title, workspaces, last update),
-    e.g. all notes in a folder. Use rag_get to read one."""
+    """List the documents and notes of the knowledge base (wiki): source path, title,
+    workspaces, last update - e.g. all notes in a folder. Use rag_get to read one."""
     wanted = contains.strip().lower()
     docs = [_summary(doc) for doc in _all_documents(workspace).values()
             if not wanted or wanted in f"{doc['path']} {doc['title']}".lower()]
@@ -103,7 +103,8 @@ def rag_documents(
 
 @rag_tool
 def rag_get(document: Document) -> dict:
-    """Read a whole document (its full text), e.g. a log or plan that is to be updated."""
+    """Get (read) a whole wiki document or note - its full text, e.g. a log or plan that is to
+    be updated."""
     doc = resolve(document)
     return {**_summary(doc), "text": read_text(doc["name"])}
 
@@ -114,8 +115,8 @@ def rag_update(
     text: Annotated[str, Field(description="The COMPLETE new content (Markdown) - it replaces "
                                            "the whole document, so read it with rag_get first.")],
 ) -> dict:
-    """Replace a document's content; source, title and workspaces stay the same. Only when the
-    user asks to change something or a skill's workflow says so."""
+    """Update (replace) the content of a wiki document or note; source, title and workspaces
+    stay the same. Only when the user asks to change something or a skill's workflow says so."""
     if not text.strip():
         raise AnythingLLMError("The new text is empty - use rag_remove to delete a document.")
     doc = resolve(document)
@@ -131,8 +132,8 @@ def rag_update(
 
 @rag_tool
 def rag_remove(document: Document) -> dict:
-    """Delete a document for good (from every workspace and the storage). Only when the user
-    explicitly asks to delete it or a skill's workflow says so."""
+    """Remove (delete) a wiki document or note for good, from every workspace and the storage.
+    Only when the user explicitly asks to delete it or a skill's workflow says so."""
     doc = resolve(document)
     client().remove_documents([doc["name"]])
     return {"removed": True, "source": doc["path"], "title": doc["title"],
