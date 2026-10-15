@@ -5,7 +5,7 @@ storage name, as rag_documents shows them. The source is stable: rag_update keep
 rag_add stores it from `path`.
 """
 import json
-import re
+from collections import Counter
 from pathlib import Path
 from typing import Annotated
 
@@ -13,20 +13,14 @@ from pydantic import Field
 
 import config
 from client import AnythingLLMError
-from tools.rag import Workspace, client, rag_tool, slugs
+from tools.rag import Workspace, client, rag_tool, slugs, source_path
 
-# Sources carry a scheme prefix ("wiki:" for imported files, "note:" for rag_add notes).
-_SCHEME = re.compile(r"^[a-z]+:(?!//)")
-MAX_LISTED = 200
+# More documents than this are summarised per folder instead (the list would flood the context).
+MAX_LISTED = 60
 
 Document = Annotated[str, Field(description=(
     "The document: its source path (e.g. 'Travel/train-log.md', a trailing part is enough), "
     "its title or its storage name, as rag_documents shows them."))]
-
-
-def _path(source: str) -> str:
-    """'wiki:Notes/Travel/log.md' → 'Notes/Travel/log.md' (URLs stay as they are)."""
-    return _SCHEME.sub("", source or "")
 
 
 def _all_documents(workspace: str | None = None) -> dict[str, dict]:
@@ -34,7 +28,7 @@ def _all_documents(workspace: str | None = None) -> dict[str, dict]:
     found: dict[str, dict] = {}
     for slug in slugs(workspace):
         for doc in client().documents(slug):
-            entry = found.setdefault(doc["name"], {**doc, "path": _path(doc["source"]),
+            entry = found.setdefault(doc["name"], {**doc, "path": source_path(doc["source"]),
                                                    "workspaces": []})
             entry["workspaces"].append(slug)
     return found
@@ -50,7 +44,7 @@ def _matches(doc: dict, wanted: str) -> bool:
 
 def resolve(document: str) -> dict:
     """The one document `document` names; a clear error for none or several."""
-    wanted = (document or "").strip().lstrip("/")
+    wanted = source_path((document or "").strip()).lstrip("/")
     if not wanted:
         raise AnythingLLMError("Name the document (see rag_documents).")
     hits = [doc for doc in _all_documents().values() if _matches(doc, wanted)]
@@ -92,13 +86,16 @@ def rag_documents(
     """List the documents and notes of the knowledge base (wiki): source path, title,
     workspaces, last update - e.g. all notes in a folder. Use rag_get to read one."""
     wanted = contains.strip().lower()
-    docs = [_summary(doc) for doc in _all_documents(workspace).values()
+    docs = [{"source": doc["path"] or doc["title"], "updated": doc["updated"]}
+            for doc in _all_documents(workspace).values()
             if not wanted or wanted in f"{doc['path']} {doc['title']}".lower()]
-    docs.sort(key=lambda d: d["source"] or d["title"])
-    result: dict = {"documents": docs[:MAX_LISTED]}
-    if len(docs) > MAX_LISTED:
-        result["note"] = f"{len(docs)} documents, first {MAX_LISTED} shown - narrow `contains`."
-    return result
+    docs.sort(key=lambda d: d["source"])
+    if len(docs) <= MAX_LISTED:
+        return {"documents": docs}
+    folders = Counter(d["source"].rpartition("/")[0] or "(top level)" for d in docs)
+    return {"folders": dict(sorted(folders.items())),
+            "note": f"{len(docs)} documents - too many to list. Call rag_documents again with "
+                    "contains='<folder>/' to list one folder."}
 
 
 @rag_tool

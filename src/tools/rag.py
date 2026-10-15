@@ -17,6 +17,8 @@ _CLIENT: list[Client] = []
 _THINK = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
 # … and prefixes every chunk with a metadata header.
 _METADATA = re.compile(r"<document_metadata>.*?</document_metadata>\s*", re.DOTALL)
+# Sources carry a scheme prefix ("wiki:" for imported files, "note:" for rag_add notes).
+_SCHEME = re.compile(r"^[a-z]+:(?!//)")
 
 Workspace = Annotated[str | None, Field(description=(
     "Workspace name or slug as rag_workspaces shows it, e.g. 'personlich'. Leave empty to "
@@ -55,6 +57,11 @@ def slugs(workspace: str | None) -> list[str]:
     raise AnythingLLMError(f"There is no workspace '{workspace}'. Workspaces: {names}.")
 
 
+def source_path(source: str) -> str:
+    """'wiki:Notes/Travel/log.md' → 'Notes/Travel/log.md' (URLs stay as they are)."""
+    return _SCHEME.sub("", source or "")
+
+
 def search(query: str, workspace: str | None = None, top_n: int = config.TOP_N) -> list[dict]:
     """Best passages over the given workspace(s), highest score first."""
     hits = []
@@ -62,7 +69,7 @@ def search(query: str, workspace: str | None = None, top_n: int = config.TOP_N) 
         for hit in client().vector_search(slug, query, top_n, config.SCORE_THRESHOLD):
             meta = hit.get("metadata") or {}
             hits.append({"workspace": slug, "title": meta.get("title") or "?",
-                         "source": meta.get("chunkSource") or meta.get("url") or "",
+                         "source": source_path(meta.get("chunkSource") or meta.get("url") or ""),
                          "score": round(float(hit.get("score") or 0), 3),
                          "text": _METADATA.sub("", hit.get("text") or "").strip()})
     hits.sort(key=lambda h: h["score"], reverse=True)
@@ -127,7 +134,8 @@ def rag_add(
         "rag_get / rag_update / rag_remove. Must not exist yet."))] = "",
 ) -> dict:
     """Add (save) a new note or document to the knowledge base (wiki). Only when the user asks
-    to store something or a skill's workflow says so."""
+    to store something or a skill's workflow says so. If a skill covers this kind of note, load it
+    first: it defines the `path`."""
     if not (workspace or "").strip():
         raise AnythingLLMError("rag_add needs a workspace (see rag_workspaces).")
     slug = slugs(workspace)[0]

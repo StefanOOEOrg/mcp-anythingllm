@@ -15,6 +15,10 @@ source; web results are only a fallback.
 - rag_add(title, text, workspace, path?), rag_update(document, text), rag_remove(document): write.
   ONLY when the user asks to store, change or delete something, or a skill's workflow says so.
   rag_update replaces the whole document: read it with rag_get first, pass the complete text.
+  If a skill covers this kind of note (todos, ideas, logs, ...), load it BEFORE writing: it
+  defines the path, and an existing log is updated with rag_update, never added a second time.
+- Listing a folder (e.g. all open todos) is rag_documents(contains='<folder>/'), not rag_search -
+  a search only returns the few best matching passages.
 Say which document an answer comes from. If nothing is found, say so instead of guessing.
 Messages may already carry passages from this knowledge base, inserted automatically before
 the turn. If they answer the question, use them directly instead of searching again.

@@ -3,6 +3,7 @@ import pytest
 from mcp.server.mcpserver.exceptions import ToolError
 
 import config
+from tools import documents
 from tools.documents import rag_documents, rag_get, rag_remove, rag_update
 
 
@@ -11,7 +12,7 @@ def test_documents_lists_sources_without_scheme_and_filters(api):
     docs = rag_documents()["documents"]
     assert [d["source"] for d in docs] == [
         "Notes/Sport/Bike.md", "Travel/train-log.md", "Work/Project.md"]
-    assert docs[0]["workspaces"] == ["personal"]
+    assert docs[0] == {"source": "Notes/Sport/Bike.md", "updated": "2026-10-15"}
     assert [d["source"] for d in rag_documents(contains="travel/")["documents"]] == [
         "Travel/train-log.md"]
     assert [d["source"] for d in rag_documents(workspace="Work")["documents"]] == [
@@ -19,7 +20,18 @@ def test_documents_lists_sources_without_scheme_and_filters(api):
     assert api.requests
 
 
-@pytest.mark.parametrize("name", ["Travel/train-log.md", "train-log.md", "train-log",
+def test_documents_summarises_folders_when_there_are_too_many(api, monkeypatch):
+    """Above MAX_LISTED, rag_documents returns the folders with their counts instead."""
+    monkeypatch.setattr(documents, "MAX_LISTED", 2)
+    result = rag_documents()
+    assert result["folders"] == {"Notes/Sport": 1, "Travel": 1, "Work": 1}
+    assert "contains=" in result["note"]
+    assert len(rag_documents(contains="travel/")["documents"]) == 1
+    assert api.requests
+
+
+@pytest.mark.parametrize("name", ["Travel/train-log.md", "note:Travel/train-log.md",
+                                  "train-log.md", "train-log",
                                   "custom-documents/raw-train-log-1.json"])
 def test_get_finds_a_document_by_path_end_title_or_storage_name(api, name):
     """Source path (or its end), title and storage name all address the same document."""
