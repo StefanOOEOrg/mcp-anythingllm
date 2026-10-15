@@ -13,6 +13,8 @@ source; web results are only a fallback.
 - rag_add(title, text, workspace): saves a note. ONLY when the user explicitly asks to store
   something.
 Say which document an answer comes from. If nothing is found, say so instead of guessing.
+Messages may already carry passages from this knowledge base, inserted automatically before
+the turn. If they answer the question, use them directly instead of searching again.
 """
 
 server = MCPServer(name="mcp-anythingllm", instructions=INSTRUCTIONS)
