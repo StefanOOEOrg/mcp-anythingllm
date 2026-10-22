@@ -1,4 +1,4 @@
-"""Document tools: list, read, replace and remove whole documents of the knowledge base.
+"""Document tools: list, read, edit, replace and remove documents of the knowledge base.
 
 A document is addressed by its source path (e.g. 'Travel/train-log.md'), its title or its
 storage name, as rag_documents shows them. The source is stable: rag_update keeps it, and
@@ -99,8 +99,8 @@ def rag_get(document: Document) -> str:
     doc = resolve(document)
     return (f"Document: {doc['path'] or doc['title']}\n"
             f"Workspaces: {', '.join(doc['workspaces'])} | updated: {doc['updated']}\n"
-            "Full text follows (this is the whole document - pass it complete, edited, to "
-            "rag_update):\n\n" + read_text(doc["name"]))
+            "Full text follows (to change a few lines use rag_edit; rag_update needs the whole "
+            "document):\n\n" + read_text(doc["name"]))
 
 
 @rag_tool
@@ -111,9 +111,33 @@ def rag_update(
 ) -> dict:
     """Update (replace) the content of a wiki document or note; source, title and workspaces
     stay the same. Only when the user asks to change something or a skill's workflow says so."""
+    return _replace(resolve(document), text)
+
+
+@rag_tool
+def rag_edit(
+    document: Document,
+    old_text: Annotated[str, Field(description="The exact text to replace, copied from rag_get "
+                                               "(a line or two); it must occur exactly once.")],
+    new_text: Annotated[str, Field(description="Its replacement (empty = delete it).")],
+) -> dict:
+    """Edit a wiki document or note in place: replace one passage (e.g. tick off a line in a
+    status list, append to a log line). Preferred over rag_update for small changes - only the
+    changed passage is sent. Only when the user asks or a skill's workflow says so."""
+    doc = resolve(document)
+    text = read_text(doc["name"])
+    count = text.count(old_text) if old_text else 0
+    if count != 1:
+        raise AnythingLLMError(
+            f"old_text occurs {count} times in '{doc['path'] or doc['title']}' - it must occur "
+            "exactly once. Copy it exactly from rag_get, add a neighbouring line if needed.")
+    return _replace(doc, text.replace(old_text, new_text))
+
+
+def _replace(doc: dict, text: str) -> dict:
+    """Store `text` as the new version of `doc`; source, title and workspaces stay."""
     if not text.strip():
         raise AnythingLLMError("The new text is empty - use rag_remove to delete a document.")
-    doc = resolve(document)
     # add the new version first, so a failure never leaves the document missing
     new = client().add_text(",".join(doc["workspaces"]), doc["title"].removesuffix(".txt"),
                             text, source=doc["source"])

@@ -18,6 +18,7 @@ AnythingLLM's developer API.
 | `rag_documents(workspace?, contains?)` | Lists the documents: source path, title, workspaces, last update. |
 | `rag_get(document)` | The whole text of one document (needs `ANYTHINGLLM_DOCUMENTS_DIR`). |
 | `rag_add(title, text, workspace, path?)` | Saves a new note and embeds it; `path` gives it a stable source to find it again. |
+| `rag_edit(document, old_text, new_text)` | Replaces one passage that occurs exactly once (e.g. ticks off a line); only the change is sent, the document is then stored like `rag_update`. |
 | `rag_update(document, text)` | Replaces a document's content (new version is embedded first, then the old one removed); source, title and workspaces stay. |
 | `rag_remove(document)` | Deletes a document from every workspace and the storage. |
 

@@ -4,7 +4,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 
 import config
 from tools import documents
-from tools.documents import rag_documents, rag_get, rag_remove, rag_update
+from tools.documents import rag_documents, rag_edit, rag_get, rag_remove, rag_update
 
 
 def test_documents_lists_sources_without_scheme_and_filters(api):
@@ -76,3 +76,22 @@ def test_remove_deletes_the_document(api):
     with pytest.raises(ToolError, match="No document"):
         rag_get("Work/Project.md")
     assert "custom-documents/raw-project-1.json" not in api.docs
+
+
+def test_edit_replaces_one_passage(api):
+    """rag_edit swaps exactly one passage and stores the result like rag_update."""
+    result = rag_edit("train-log.md", "Linz-Wien", "Linz-Wien, Wels-Graz")
+    assert result["updated"] and result["source"] == "Travel/train-log.md"
+    assert rag_get("Travel/train-log.md").endswith("\n\n2026: Linz-Wien, Wels-Graz")
+    assert ("DELETE", "/system/remove-documents") in [(m, p) for m, p, _ in api.requests]
+
+
+def test_edit_needs_a_unique_passage(api):
+    """Missing or ambiguous old_text changes nothing."""
+    with pytest.raises(ToolError, match="occurs 0 times"):
+        rag_edit("train-log.md", "Salzburg", "x")
+    with pytest.raises(ToolError, match="occurs 0 times"):
+        rag_edit("train-log.md", "", "x")
+    with pytest.raises(ToolError, match="occurs 2 times"):
+        rag_edit("train-log.md", "n", "x")
+    assert not [r for r in api.requests if r[1] == "/document/raw-text"]
