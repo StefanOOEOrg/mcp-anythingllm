@@ -1,7 +1,7 @@
 # mcp-anythingllm
 
 [![CI](https://github.com/StefanOOEOrg/mcp-anythingllm/actions/workflows/ci.yml/badge.svg)](https://github.com/StefanOOEOrg/mcp-anythingllm/actions/workflows/ci.yml)
-[![M8ven Verified](https://m8ven.ai/badge/mcp/stefanooeorg-mcp-anythingllm-1sehba?variant=verified)](https://m8ven.ai/mcp/stefanooeorg-mcp-anythingllm-1sehba)
+[![M8ven Score](https://m8ven.ai/badge/mcp/stefanooeorg-mcp-anythingllm-1sehba?v=a87b424f2098a20f1b665d3f1870ad30)](https://m8ven.ai/mcp/stefanooeorg-mcp-anythingllm-1sehba?s=readme)
 
 MCP server (stdio) that gives Hermes access to the knowledge base in
 [AnythingLLM](https://github.com/Mintplex-Labs/anything-llm): documents uploaded through the
