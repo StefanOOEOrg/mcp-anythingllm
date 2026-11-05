@@ -74,9 +74,9 @@ mcp-anythingllm/
 │       └── rag.py           # rag_workspaces / rag_search / rag_answer
 ├── tests/                   # fake API via httpx.MockTransport, no network
 ├── scripts/import_wiki.py   # bulk import of a Markdown folder
-├── .github/workflows/ci.yml # pytest + pylint on 3.11 and 3.14
+├── .github/workflows/ci.yml # pytest + ruff on 3.11 and 3.14
 ├── .env.example             # copy to .env
-├── .pylintrc
+├── pyproject.toml           # ruff config (E, F, I, UP, B; line length 100)
 ├── pytest.ini
 ├── requirements.txt / requirements-dev.txt
 ├── LICENSE
@@ -88,7 +88,7 @@ mcp-anythingllm/
 ```bash
 python3 -m venv venv && venv/bin/pip install -r requirements-dev.txt
 venv/bin/python -m pytest          # fake API via httpx.MockTransport, no network
-venv/bin/pylint src tests
+venv/bin/python -m ruff check src tests
 ```
 
 ## Hermes

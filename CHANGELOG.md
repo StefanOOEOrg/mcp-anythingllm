@@ -14,4 +14,4 @@ Initial release.
 - Configuration via `.env` (`ANYTHINGLLM_URL`, `_API_KEY`, `_TIMEOUT_SECONDS`, `_SCORE_THRESHOLD`,
   `_TOP_N`, `_DOCUMENTS_DIR`, `LOG_LEVEL`); `.env.example` ships the template.
 - `scripts/import_wiki.py` — bulk import of a Markdown folder into workspaces.
-- CI: pytest + pylint on Python 3.11 and 3.14.
+- CI: pytest + ruff on Python 3.11 and 3.14.
