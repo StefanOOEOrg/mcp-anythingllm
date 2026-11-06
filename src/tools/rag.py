@@ -1,7 +1,8 @@
 """Knowledge-base tools: search, answer and add documents in AnythingLLM workspaces."""
 import functools
 import re
-from typing import Annotated, Callable
+from collections.abc import Callable
+from typing import Annotated
 
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import Field

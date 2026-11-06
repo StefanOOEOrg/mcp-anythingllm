@@ -68,7 +68,7 @@ class FakeApi:
         return {"success": True, "error": None,
                 "documents": [{"title": title, "location": name}]}
 
-    def __call__(self, request: httpx.Request) -> httpx.Response:  # pylint: disable=too-many-return-statements
+    def __call__(self, request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content) if request.content else {}
         path = request.url.path.removeprefix("/api/v1")
         self.requests.append((request.method, path, body))

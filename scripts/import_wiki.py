@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from client import Client  # pylint: disable=wrong-import-position
+from client import Client
 
 STATE = Path(os.getenv("XDG_STATE_HOME", Path.home() / ".local/state")) / "anythingllm-import.json"
 
